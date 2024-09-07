@@ -439,7 +439,7 @@ loopDelay2:
 			ld c, 0
 		    call 0x08F5    ; print at sets cursor position
 		#endasm
-		printf("score %d, level %d", score, 100 - level);
+		printf("player pos %x", playerScreenPos);
 		
 	}
     
