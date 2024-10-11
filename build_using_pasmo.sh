@@ -1,3 +1,3 @@
 #!/bin/sh
 
-pasmo -v spaceShoot.asm spaceShoot.p
+pasmo -v spaceShooter.asm spaceShooter.p

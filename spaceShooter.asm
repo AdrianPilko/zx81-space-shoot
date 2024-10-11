@@ -108,7 +108,7 @@ _INV_A          EQU $A6
 
 _DOOR_OPEN_CHARACTER          EQU $08    ; grey block
 _DOOR_LOCKED_CHARACTER            EQU $b1      ; inverse L
-_DOOR_OFFSET                    EQU 62 
+_DOOR_OFFSET                    EQU 62
 ;;;; this is the whole ZX81 runtime system and gets assembled and
 ;;;; loads as it would if we just powered/booted into basic
 
@@ -176,7 +176,7 @@ titleLoop1
     ld (hl),_INV_QUOTES
     inc hl
     djnz titleLoop1
-        
+
 
     ld bc, 105
     ld de, START_GAME_TITLE
@@ -191,7 +191,7 @@ titleLoop2
     ld (hl),_INV_QUOTES
     inc hl
     djnz titleLoop2
-        
+
 
     ld bc, 204
     ld de, START_TEXT2
@@ -204,7 +204,7 @@ titleLoop2
     ld bc, 267
     ld de, START_TEXT_TIP_2
     call printstring
-    
+
     ld bc, 432
     ld de, START_TEXT3
     call printstring
@@ -231,7 +231,7 @@ titleLoop2
 	ld bc,337
 	ld de,high_Score_txt
 	call printstring
-	
+
     ld bc, 377
     ;ld de, last_score_mem_hund ; load address of hundreds
     ld de, high_score_hund
@@ -241,7 +241,7 @@ titleLoop2
 	ld de, high_score_tens
 	call printNumber
 
-          
+
     xor a
     ld (score_mem_tens),a
     ld (score_mem_hund),a
@@ -286,7 +286,7 @@ preinit
     call fillScreenBlack
     xor a
     ld (enemyAddedFlag),a
-    
+
     ld de, 661
     ld hl, Display+1
     add hl, de
@@ -294,7 +294,7 @@ preinit
     ld (hl),a
     ld (playerAbsAddress),hl
 
-    ; initially the exit is set to a locked state, player has to get at least 10 dollars to 
+    ; initially the exit is set to a locked state, player has to get at least 10 dollars to
     ; unlock the door (ie change it to a grey block
     ld de, _DOOR_OFFSET   ; exit location
     ld hl, Display+1
@@ -303,16 +303,16 @@ preinit
     ld (hl),a
     xor a
     ld (currentDollarCount), a
-    
-    
+
+
     ld de, 372
-    ld hl, Display+1 
-    add hl, de 
+    ld hl, Display+1
+    add hl, de
     ld (currentPlayerLocation), hl
-        
+
 
     ld hl, defaultPlayerSprite
-    ld (playerSpritePointer), hl 
+    ld (playerSpritePointer), hl
 
 
 gameLoop
@@ -325,103 +325,64 @@ gameLoop
 waitForTVSync
     call vsync
     djnz waitForTVSync
-    
-    ld hl, (playerSpritePointer)    
+
+    ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
     ld c, 8
-    ld b, 8    
+    ld b, 8
     call drawSprite
-    
+
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
-    pop hl  ; stack jiggery pokery to make stack consistent without using return 
-    
+    pop hl  ; stack jiggery pokery to make stack consistent without using return
     jp gameLoop
-        
-    
+
+
 moveLeft
     pop hl
-	ld (prevPlayerAddress),hl
-    ld hl, (playerAbsAddress)
-	dec hl
-	ld a, (hl)  ; check not a wall
-	cp 128
-	jp z, gameLoop
-	cp _DOOR_OPEN_CHARACTER ; exit found
-	jp z, gameWon
-	cp _DOOR_LOCKED_CHARACTER ; exit locked
-	jp z, gameLoop
-	cp _DOLLAR
-	push hl
-	call z, increaseScore
-	pop hl
-	ld (playerAbsAddress), hl
-	ld hl,(prevPlayerAddress)
-	ld (hl), _DT
-	jp gameLoop
+    ld hl,(playerSpritePointer)
+    ld de,(defaultPlayerSprite)
+    ld a, d
+    cp h
+    jp z, mvLeftCheckNextReg
+    jp rotateLeft
+mvLeftCheckNextReg
+    ld a, e
+    cp l
+    call z, wrapPointerEnd
+rotateLeft
+    ld hl,(playerSpritePointer)
+    ld de, 64
+    add hl, de
+    ld (playerSpritePointer), hl
+    jp gameLoop
 moveRight
     pop hl
-    ld (prevPlayerAddress),hl
-    ld hl, (playerAbsAddress)
-	inc hl
-	ld a, (hl)  ; check not a wall
-	cp 128
-	jp z, gameLoop
-	cp _DOOR_OPEN_CHARACTER ; exit found
-	jp z, gameWon
-	cp _DOOR_LOCKED_CHARACTER ; exit locked
-	jp z, gameLoop
-	cp _DOLLAR
-	push hl
-	call z, increaseScore
-	pop hl
-	ld (playerAbsAddress), hl
-	ld hl,(prevPlayerAddress)
-	ld (hl), _DT
-	jp gameLoop
+    ld hl,(playerSpritePointer)
+    ld de,(eigthPlayerSprite)
+    ld a, d
+    cp h
+    jp z, mvRightCheckNextReg
+    jp rotateRight
+mvRightCheckNextReg
+    ld a, e
+    cp l
+    call z, wrapPointerStart
+rotateRight
+
+    ld hl,(playerSpritePointer)
+    ld de, 64
+    sbc hl, de
+    ld (playerSpritePointer), hl
+    jp gameLoop
+
 moveUp
     pop hl
-    ld (prevPlayerAddress),hl
-    ld hl, (playerAbsAddress)
-	ld de, -33
-	add hl, de
-	ld a, (hl)  ; check not a wall
-	cp 128
-	jp z, gameLoop
-	cp _DOOR_OPEN_CHARACTER ; exit found
-	jp z, gameWon
-	cp _DOOR_LOCKED_CHARACTER ; exit locked
-	jp z, gameLoop
-	cp _DOLLAR
-	push hl
-	call z, increaseScore
-	pop hl
-	ld (playerAbsAddress), hl
-	ld hl,(prevPlayerAddress)
-	ld (hl), _DT
-	jp gameLoop
+    jp gameLoop
 moveDown
     pop hl
-    ld (prevPlayerAddress),hl
-    ld hl, (playerAbsAddress)
-	ld de, 33
-	add hl, de
-	ld a, (hl)  ; check not a wall
-	cp 128
-	jp z, gameLoop
-	cp _DOOR_OPEN_CHARACTER ; exit found
-	jp z, gameWon
-	cp _DOOR_LOCKED_CHARACTER ; exit locked
-	jp z, gameLoop	
-	cp _DOLLAR
-	push hl
-	call z, increaseScore
-	pop hl
-	ld (playerAbsAddress), hl
-	ld hl,(prevPlayerAddress)
-	ld (hl), _DT
     jp gameLoop
-    
+
 gameWon
     ld bc, 308
     ld de, YOU_WON_TEXT_0
@@ -437,7 +398,7 @@ gameWon
     inc a
     daa
     ld (levelCount), a
-    
+
     call waitABit
     call waitABit
     call waitABit
@@ -490,9 +451,9 @@ skipAddHund
     inc a
     cp 10
     jr z, openDoor
-    ld (currentDollarCount),a 
+    ld (currentDollarCount),a
     jr checkHighScore
-openDoor 
+openDoor
     ld de, _DOOR_OFFSET   ; exit location
     ld hl, Display+1
     add hl, de
@@ -537,7 +498,7 @@ decreaseScore						; z80 daa instruction realigns for BCD after add or subtract
     cp 0
     jr z, decrementHund
     dec a
-    daa			
+    daa
     ld (score_mem_tens),a
     jr skipDecrementHund
 decrementHund
@@ -570,6 +531,20 @@ printLivesAndScore
     pop hl
     ret
 
+wrapPointerEnd
+    ld de, 448
+    ld hl, (playerSpritePointer)
+    add hl, de
+    ld (playerSpritePointer),hl
+    ret
+
+
+wrapPointerStart
+    ld de, 448
+    ld hl, (playerSpritePointer)
+    sbc hl, de
+    ld (playerSpritePointer),hl
+    ret
 
 INCLUDE commonUtils.asm
 
@@ -644,12 +619,12 @@ levelCount
     DB 0
 currentDollarCount
     DB 0
-    
-playerSpritePointer
-    DEFW 0 
 
-currentPlayerLocation    
-    DEFW 0 
+playerSpritePointer
+    DEFW 0
+
+currentPlayerLocation
+    DEFW 0
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
 defaultPlayerSprite
@@ -658,45 +633,57 @@ defaultPlayerSprite
   DEFB	    	$00, $00, $00, $81, $82, $00, $00, $00, $00, $00, $80, $80
   DEFB	    	$80, $80, $00, $00, $00, $85, $01, $85, $05, $02, $05, $00
   DEFB	    	$00, $00, $00, $84, $07, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB			$00, $00, $00, $00
+secondPlayerSprite
+  DEFB          $00, $00, $00, $00, $00, $00, $00, $00
   DEFB  		$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $04
   DEFB			$00, $87, $00, $00, $00, $00, $02, $80, $81, $07, $86, $00
   DEFB			$00, $00, $00, $81, $80, $04, $04, $00, $00, $00, $87, $07
   DEFB			$02, $80, $04, $00, $00, $00, $00, $86, $02, $02, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB			$00, $00, $00, $00, $00, $00, $00, $00
+thirdPlayerSprite
+  DEFB          $00, $00, $00, $00
   DEFB  		$00, $00, $00, $00, $00, $00, $00, $00, $00, $83, $00, $00
   DEFB			$00, $00, $00, $00, $80, $01, $00, $00, $00, $00, $83, $81
   DEFB			$80, $83, $82, $00, $00, $00, $03, $84, $80, $03, $07, $00
   DEFB			$00, $00, $00, $00, $80, $04, $00, $00, $00, $00, $00, $00
   DEFB			$00, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+fourthPlayerSprite
   DEFB	    	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $06
   DEFB      	$87, $00, $00, $00, $00, $00, $02, $82, $87, $82, $00, $00
   DEFB	    	$00, $00, $00, $84, $80, $01, $01, $00, $00, $00, $87, $80
   DEFB	    	$84, $82, $06, $00, $00, $00, $80, $01, $00, $02, $00, $00
   DEFB	    	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB			$00, $00, $00, $00
+fifthPlayerSprite
+  DEFB          $00, $00, $00, $00, $00, $00, $00, $00
   DEFB  		$00, $00, $00, $81, $82, $00, $00, $00, $00, $85, $04, $85
   DEFB			$05, $87, $05, $00, $00, $00, $80, $80, $80, $80, $00, $00
   DEFB			$00, $00, $00, $84, $07, $00, $00, $00, $00, $00, $00, $85
   DEFB			$05, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB			$00, $00, $00, $00, $00, $00, $00, $00
+sixthPlayerSprite
+  DEFB          $00, $00, $00, $00
   DEFB  		$00, $00, $00, $00, $00, $00, $04, $04, $86, $00, $00, $00
   DEFB			$00, $02, $80, $04, $81, $01, $00, $00, $00, $02, $02, $80
   DEFB			$07, $00, $00, $00, $00, $86, $81, $07, $80, $04, $00, $00
   DEFB			$00, $00, $01, $00, $02, $80, $00, $00, $00, $00, $00, $00
   DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB	    	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $83, $00
+sevelthPlayerSprite
+  DEFB          $00, $00, $00, $00, $00, $00, $83, $00, $00, $00, $00, $00
   DEFB      	$00, $00, $00, $00, $00, $00, $02, $80, $00, $00, $00, $00
   DEFB	    	$00, $81, $83, $80, $82, $83, $00, $00, $00, $84, $03, $80
   DEFB	    	$07, $03, $00, $00, $00, $00, $87, $80, $00, $00, $00, $00
   DEFB	    	$00, $00, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB			$00, $00, $00, $00
+eigthPlayerSprite
+  DEFB          $00, $00, $00, $00, $00, $00, $00, $00
   DEFB  		$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $04, $00
   DEFB			$87, $80, $00, $00, $00, $06, $84, $82, $80, $01, $00, $00
   DEFB			$00, $87, $87, $80, $82, $00, $00, $00, $00, $87, $80, $01
   DEFB			$84, $04, $00, $00, $00, $00, $01, $01, $06, $00, $00, $00
   DEFB			$00, $00, $00, $00, $00, $00, $00, $00
-    
+
 YOU_WON_TEXT_0
     DB 7,3,3,3,3,3,3,3,3,3,3,3,3,132,$ff
 YOU_LOST_TEXT_1
@@ -711,7 +698,7 @@ START_GAME_TITLE
     DB 	139,0,_Z,_X,_8,_1,0,_S,_P,_A,_C,_E,0,_S,_H,_O,_O,_T,_E,_R,0,139,$ff
 START_GAME_CRED1
    DB  1, 2, 1, 2 ,1,0, _Y,_O,_U,_T,_U,_B,_E,_CL,0,_B,_Y,_T,_E,_F,_O,_R,_E,_V,_E,_R,0,1,2,1,2,1,$ff
-START_GAME_CRED2  
+START_GAME_CRED2
     DB 1,2,1,2,1,0,_B,_Y,0,_A,0,_P,_I,_L,_K,_I,_N,_G,_T,_O,_N,0,_2,_0,_2,_4,0,1,2,1,2,1,$ff
 START_GAME_CRED3
     DB 1, 2, 1, 2 ,1,0,_V,_E,_R,_S,_I,_O,_N,0,_V,_0,_DT,_1,0,1,2,1,2,1,$ff
