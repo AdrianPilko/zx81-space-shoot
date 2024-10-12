@@ -312,20 +312,18 @@ waitForTVSync
     djnz waitForTVSync
 
     ;debug
-    ld bc, (pointerToMovement)
-    ld de, 6
-    call print_number16bits
+    ;ld bc, (pointerToMovement)
+    ;ld de, 6
+    ;call print_number16bits
 
     ;debug
-    ld bc, playerDirectionAddSubs
-    ld de, 12
-    call print_number16bits
-
-
+    ;ld bc, playerDirectionAddSubs
+    ;ld de, 12
+    ;call print_number16bits
     ;debug
-    ld bc, playerDirectionAddSubs_end
-    ld de, 18
-    call print_number16bits
+    ;ld bc, playerDirectionAddSubs_end
+    ;ld de, 18
+    ;call print_number16bits
 
 
     ld hl, (playerSpritePointer)
