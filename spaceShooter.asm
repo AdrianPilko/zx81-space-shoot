@@ -41,7 +41,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      3
+VSYNCLOOP       EQU      5
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -283,7 +283,7 @@ preinit
     ld bc, 1
     ld de, MAZE_TEXT
     call printstring
-    call fillScreenBlack
+    call fillScreenWhite
     xor a
     ld (enemyAddedFlag),a
 
@@ -314,6 +314,8 @@ preinit
     ld hl, defaultPlayerSprite
     ld (playerSpritePointer), hl
 
+    ld hl, playerDirectionAddSubs
+    ld (pointerToMovement), hl
 
 gameLoop
 
@@ -335,43 +337,46 @@ waitForTVSync
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
     pop hl  ; stack jiggery pokery to make stack consistent without using return
+    call movePlayer
     jp gameLoop
 
 
 moveLeft
     pop hl
     ld hl,(playerSpritePointer)
-    ld de,(defaultPlayerSprite)
-    ld a, d
-    cp h
-    jp z, mvLeftCheckNextReg
-    jp rotateLeft
-mvLeftCheckNextReg
+    ld de,eigthPlayerSprite
     ld a, e
     cp l
-    call z, wrapPointerEnd
+    jp nz, rotateLeft
+    ld a, d
+    cp h
+    jp nz, rotateLeft
+    call wrapPointerStart
+    jp gameLoop
 rotateLeft
     ld hl,(playerSpritePointer)
     ld de, 64
     add hl, de
     ld (playerSpritePointer), hl
+    ;; need to set the current direction - this also moves through a sequence based on
+    ;; how many "compass point directions" there are (8)
     jp gameLoop
+
 moveRight
     pop hl
     ld hl,(playerSpritePointer)
-    ld de,(eigthPlayerSprite)
-    ld a, d
-    cp h
-    jp z, mvRightCheckNextReg
-    jp rotateRight
-mvRightCheckNextReg
+    ld de,defaultPlayerSprite
     ld a, e
     cp l
-    call z, wrapPointerStart
+    jp nz, rotateRight
+    ld a, d
+    cp h
+    jp nz, rotateRight
+    call wrapPointerEnd
+    jp gameLoop
 rotateRight
-
     ld hl,(playerSpritePointer)
-    ld de, 64
+    ld de, 63
     sbc hl, de
     ld (playerSpritePointer), hl
     jp gameLoop
@@ -382,6 +387,15 @@ moveUp
 moveDown
     pop hl
     jp gameLoop
+firePressed
+    pop hl
+    ld a, 1
+    ld (playerMoving), a
+    jp gameLoop
+
+movePlayer
+
+    ret
 
 gameWon
     ld bc, 308
@@ -532,18 +546,18 @@ printLivesAndScore
     ret
 
 wrapPointerEnd
-    ld de, 448
-    ld hl, (playerSpritePointer)
-    add hl, de
+    push hl
+    ld hl, eigthPlayerSprite
     ld (playerSpritePointer),hl
+    pop hl
     ret
 
 
 wrapPointerStart
-    ld de, 448
-    ld hl, (playerSpritePointer)
-    sbc hl, de
-    ld (playerSpritePointer),hl
+    push hl
+    ld hl, defaultPlayerSprite
+    ld (playerSpritePointer), hl
+    pop hl
     ret
 
 INCLUDE commonUtils.asm
@@ -625,64 +639,114 @@ playerSpritePointer
 
 currentPlayerLocation
     DEFW 0
+
+playerMoving
+    DEFB 0
+pointerToMovement
+    DEFW  0
+; this controls the movements of the player based on how many blocks have to be added or subtracted to move
+; in the 8 directions
+playerDirectionAddSubs
+    DEFW -33  ; north
+    DEFW -34  ; north-west
+    DEFW -1   ; west
+    DEFW +32  ; south-west
+    DEFW +33  ; south
+    DEFW +34  ; south-east
+    DEFW +1   ; east
+    DEFW -32  ; north-east
+
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $85, $05, $00, $00, $00
+  DEFB $00, $00, $00, $81, $82, $00, $00, $00
+  DEFB $00, $00, $80, $80, $80, $80, $00, $00
+  DEFB $00, $85, $01, $85, $05, $02, $05, $00
+  DEFB $00, $00, $00, $84, $07, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $85, $05, $00, $00, $00
+  DEFB $00, $00, $00, $81, $82, $00, $00, $00
+  DEFB $00, $00, $80, $80, $80, $80, $00, $00
+  DEFB $00, $85, $01, $85, $05, $02, $05, $00
+  DEFB $00, $00, $00, $84, $07, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 defaultPlayerSprite
-  DEFB	    	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB      	$00, $00, $00, $00, $00, $00, $00, $85, $05, $00, $00, $00
-  DEFB	    	$00, $00, $00, $81, $82, $00, $00, $00, $00, $00, $80, $80
-  DEFB	    	$80, $80, $00, $00, $00, $85, $01, $85, $05, $02, $05, $00
-  DEFB	    	$00, $00, $00, $84, $07, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $85, $05, $00, $00, $00
+  DEFB $00, $00, $00, $81, $82, $00, $00, $00
+  DEFB $00, $00, $80, $80, $80, $80, $00, $00
+  DEFB $00, $85, $01, $85, $05, $02, $05, $00
+  DEFB $00, $00, $00, $84, $07, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 secondPlayerSprite
-  DEFB          $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB  		$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $04
-  DEFB			$00, $87, $00, $00, $00, $00, $02, $80, $81, $07, $86, $00
-  DEFB			$00, $00, $00, $81, $80, $04, $04, $00, $00, $00, $87, $07
-  DEFB			$02, $80, $04, $00, $00, $00, $00, $86, $02, $02, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $80, $04, $00, $87, $00, $00
+  DEFB $00, $00, $02, $80, $81, $07, $86, $00
+  DEFB $00, $00, $00, $81, $80, $04, $04, $00
+  DEFB $00, $00, $87, $07, $02, $80, $04, $00
+  DEFB $00, $00, $00, $86, $02, $02, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 thirdPlayerSprite
-  DEFB          $00, $00, $00, $00
-  DEFB  		$00, $00, $00, $00, $00, $00, $00, $00, $00, $83, $00, $00
-  DEFB			$00, $00, $00, $00, $80, $01, $00, $00, $00, $00, $83, $81
-  DEFB			$80, $83, $82, $00, $00, $00, $03, $84, $80, $03, $07, $00
-  DEFB			$00, $00, $00, $00, $80, $04, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $83, $00, $00
+  DEFB $00, $00, $00, $00, $80, $01, $00, $00
+  DEFB $00, $00, $83, $81, $80, $83, $82, $00
+  DEFB $00, $00, $03, $84, $80, $03, $07, $00
+  DEFB $00, $00, $00, $00, $80, $04, $00, $00
+  DEFB $00, $00, $00, $00, $00, $03, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 fourthPlayerSprite
-  DEFB	    	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $06
-  DEFB      	$87, $00, $00, $00, $00, $00, $02, $82, $87, $82, $00, $00
-  DEFB	    	$00, $00, $00, $84, $80, $01, $01, $00, $00, $00, $87, $80
-  DEFB	    	$84, $82, $06, $00, $00, $00, $80, $01, $00, $02, $00, $00
-  DEFB	    	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $06, $87, $00, $00, $00
+  DEFB $00, $00, $02, $82, $87, $82, $00, $00
+  DEFB $00, $00, $00, $84, $80, $01, $01, $00
+  DEFB $00, $00, $87, $80, $84, $82, $06, $00
+  DEFB $00, $00, $80, $01, $00, $02, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 fifthPlayerSprite
-  DEFB          $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB  		$00, $00, $00, $81, $82, $00, $00, $00, $00, $85, $04, $85
-  DEFB			$05, $87, $05, $00, $00, $00, $80, $80, $80, $80, $00, $00
-  DEFB			$00, $00, $00, $84, $07, $00, $00, $00, $00, $00, $00, $85
-  DEFB			$05, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $81, $82, $00, $00, $00
+  DEFB $00, $85, $04, $85, $05, $87, $05, $00
+  DEFB $00, $00, $80, $80, $80, $80, $00, $00
+  DEFB $00, $00, $00, $84, $07, $00, $00, $00
+  DEFB $00, $00, $00, $85, $05, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 sixthPlayerSprite
-  DEFB          $00, $00, $00, $00
-  DEFB  		$00, $00, $00, $00, $00, $00, $04, $04, $86, $00, $00, $00
-  DEFB			$00, $02, $80, $04, $81, $01, $00, $00, $00, $02, $02, $80
-  DEFB			$07, $00, $00, $00, $00, $86, $81, $07, $80, $04, $00, $00
-  DEFB			$00, $00, $01, $00, $02, $80, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-sevelthPlayerSprite
-  DEFB          $00, $00, $00, $00, $00, $00, $83, $00, $00, $00, $00, $00
-  DEFB      	$00, $00, $00, $00, $00, $00, $02, $80, $00, $00, $00, $00
-  DEFB	    	$00, $81, $83, $80, $82, $83, $00, $00, $00, $84, $03, $80
-  DEFB	    	$07, $03, $00, $00, $00, $00, $87, $80, $00, $00, $00, $00
-  DEFB	    	$00, $00, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB			$00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $04, $04, $86, $00, $00, $00
+  DEFB $00, $02, $80, $04, $81, $01, $00, $00
+  DEFB $00, $02, $02, $80, $07, $00, $00, $00
+  DEFB $00, $86, $81, $07, $80, $04, $00, $00
+  DEFB $00, $00, $01, $00, $02, $80, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+seventhPlayerSprite
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $83, $00, $00, $00, $00, $00
+  DEFB $00, $00, $02, $80, $00, $00, $00, $00
+  DEFB $00, $81, $83, $80, $82, $83, $00, $00
+  DEFB $00, $84, $03, $80, $07, $03, $00, $00
+  DEFB $00, $00, $87, $80, $00, $00, $00, $00
+  DEFB $00, $00, $03, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 eigthPlayerSprite
-  DEFB          $00, $00, $00, $00, $00, $00, $00, $00
-  DEFB  		$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $04, $00
-  DEFB			$87, $80, $00, $00, $00, $06, $84, $82, $80, $01, $00, $00
-  DEFB			$00, $87, $87, $80, $82, $00, $00, $00, $00, $87, $80, $01
-  DEFB			$84, $04, $00, $00, $00, $00, $01, $01, $06, $00, $00, $00
-  DEFB			$00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $04, $00, $87, $80, $00, $00
+  DEFB $00, $06, $84, $82, $80, $01, $00, $00
+  DEFB $00, $87, $87, $80, $82, $00, $00, $00
+  DEFB $00, $87, $80, $01, $84, $04, $00, $00
+  DEFB $00, $00, $01, $01, $06, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+endPlayerSpriteMem
 
 YOU_WON_TEXT_0
     DB 7,3,3,3,3,3,3,3,3,3,3,3,3,132,$ff

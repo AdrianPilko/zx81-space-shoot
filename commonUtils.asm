@@ -24,7 +24,7 @@ setRandomNumberZeroOne
 
    	ld hl, (randomSeed)  ; attempt to set random seed based on time user takes to press start
 	inc hl
-	ld a, $1f   ; we want a random seed index into the ROM which is 8Kbytes or zero to 8191 = 1f00 hex 
+	ld a, $1f   ; we want a random seed index into the ROM which is 8Kbytes or zero to 8191 = 1f00 hex
 	cp h
 	jr z, resetRandSeed_2
 	ld (randomSeed),hl
@@ -33,7 +33,7 @@ resetRandSeed_2
     ld hl, 0
 	ld (randomSeed), hl
 endOfUpdateRandomSeed
-	
+
     ld a, (hl)
     and %00000001
     ; a now contains random number zero or one
@@ -42,7 +42,7 @@ endOfUpdateRandomSeed
 setRandomNumberFive
     ld hl, (randomSeed)  ; attempt to set random seed based on time user takes to press start
     inc hl
-    ld a, $1f   ; we want a random seed index into the ROM which is 8Kbytes or zero to 8191 = 1f00 hex 
+    ld a, $1f   ; we want a random seed index into the ROM which is 8Kbytes or zero to 8191 = 1f00 hex
     cp h
     jr z, resetRandSeed_Four
     ld (randomSeed),hl
@@ -75,7 +75,7 @@ NInARow
     jr endOfOneInTenSetAOne
    	ld hl, (randomSeed)  ; attempt to set random seed based on time user takes to press start
 	inc hl
-	ld a, $1f   ; we want a random seed index into the ROM which is 8Kbytes or zero to 8191 = 1f00 hex 
+	ld a, $1f   ; we want a random seed index into the ROM which is 8Kbytes or zero to 8191 = 1f00 hex
 	cp h
 	jr z, resetRandSeed_3
 	ld (randomSeed),hl
@@ -84,11 +84,11 @@ resetRandSeed_3
     ld hl, 0
 	ld (randomSeed), hl
 endOfUpdateRandomSeed_1
-	
+
     ld a, (hl)
     and %00000001
     cp 1      ; try to get a 1 in ten by looping 4 times in a row if one every time
-    jr z, NInARow 
+    jr z, NInARow
     jr endOfOneInTenSetAZero
 endOfOneInTenSetAOne
     ;; at this point we had enough 1's in a row
@@ -189,23 +189,23 @@ printNumber_loop
 ;;; de = offset position in screen memory top left of sprite - no limit check done (yet)
 ;;; c  = width of sprite (normally 8 to keep things "simple")
 ;;; b  = rows in sprite (normally 8 to keep things "simple")
-drawSprite         
-    push bc    
+drawSprite
+    push bc
     push de
     ld b, 0               ;; just doing columns in c so zero b
     ldir                  ;; ldir repeats ld (de), (hl) until bc = 0 and increments hl and de
     pop de
-    ex de, hl    
+    ex de, hl
     ld bc, 33             ;; move next write position to next row
     add hl, bc
     ex de, hl
     pop bc
-    djnz drawSprite    
+    djnz drawSprite
     ret
 
 
 ;; Keyboard check
-;; notes that to use this you "call" and must pop stack immediately 
+;; notes that to use this you "call" and must pop stack immediately
 ;; in the moveLeft moveRight etc. moveLeft, moveRight, moveUp, moveDown, gameLoopKeyRet
 ;; must be defined as well as gameLoop in the main code
 
@@ -255,8 +255,15 @@ readKeys:
 
     ld a, KEYBOARD_READ_PORT_A_TO_G
     in a, (KEYBOARD_READ_PORT)					; read from io port
-    bit 0, a						    ; A
+    bit 0, a                            ; A
     jp z, moveDown
+
+    ld a, KEYBOARD_READ_PORT_SPACE_TO_B
+    in a, (KEYBOARD_READ_PORT)					; read from io port
+    bit 0, a                            ; A
+    jp z, firePressed
+
+
 	jp gameLoopKeyRet
     ret ;; never gets here
 
@@ -288,4 +295,22 @@ colLoop
     inc hl
     pop bc
     djnz rowLoop
+    ret
+
+fillScreenWhite
+    ld hl,Display+1
+    ld de, 33
+    add hl, de
+    ld a, 0
+    ld b, 21
+rowLoopWhite
+    push bc
+    ld b, 32
+colLoopWhite
+    ld (hl),a
+    inc hl
+    djnz colLoopWhite
+    inc hl
+    pop bc
+    djnz rowLoopWhite
     ret
