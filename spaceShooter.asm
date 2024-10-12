@@ -41,7 +41,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      5
+VSYNCLOOP       EQU      4
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -281,7 +281,7 @@ preinit
 
 	;call CLS  ; clears screen and sets the boarder
     ld bc, 1
-    ld de, MAZE_TEXT
+    ld de, LEVEL_TEXT
     call printstring
     call fillScreenWhite
     xor a
@@ -327,6 +327,11 @@ gameLoop
 waitForTVSync
     call vsync
     djnz waitForTVSync
+
+    ;debug
+    ld bc, (playerSpritePointer)
+    ld de, 8
+    call print_number16bits
 
     ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
@@ -376,7 +381,8 @@ moveRight
     jp gameLoop
 rotateRight
     ld hl,(playerSpritePointer)
-    ld de, 63
+    ld de, 64
+    or a   ; clear the casrry flag otherwise will subtract one more than expected (sometimes)
     sbc hl, de
     ld (playerSpritePointer), hl
     jp gameLoop
@@ -655,7 +661,7 @@ playerDirectionAddSubs
     DEFW +34  ; south-east
     DEFW +1   ; east
     DEFW -32  ; north-east
-
+    DEFB 0 ; extra byte for alignment
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
   DEFB $00, $00, $00, $00, $00, $00, $00, $00
@@ -747,6 +753,22 @@ eigthPlayerSprite
   DEFB $00, $00, $01, $01, $06, $00, $00, $00
   DEFB $00, $00, $00, $00, $00, $00, $00, $00
 endPlayerSpriteMem
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $85, $05, $00, $00, $00
+  DEFB $00, $00, $00, $81, $82, $00, $00, $00
+  DEFB $00, $00, $80, $80, $80, $80, $00, $00
+  DEFB $00, $85, $01, $85, $05, $02, $05, $00
+  DEFB $00, $00, $00, $84, $07, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
+  DEFB $00, $00, $00, $85, $05, $00, $00, $00
+  DEFB $00, $00, $00, $81, $82, $00, $00, $00
+  DEFB $00, $00, $80, $80, $80, $80, $00, $00
+  DEFB $00, $85, $01, $85, $05, $02, $05, $00
+  DEFB $00, $00, $00, $84, $07, $00, $00, $00
+  DEFB $00, $00, $00, $00, $00, $00, $00, $00
 
 YOU_WON_TEXT_0
     DB 7,3,3,3,3,3,3,3,3,3,3,3,3,132,$ff
@@ -756,8 +778,8 @@ YOU_WON_TEXT_1
     DB 5,_Y,_O,_U,__,_E,_S,_C,_A,_P,_E,_D,_QM,133,$ff
 YOU_WON_TEXT_2
     DB 130,131,131,131,131,131,131,131,131,131,131,131,131,129,$ff
-MAZE_TEXT
-    DB _M,_A,_Z,_E,_CL,0,0,0,0,0,0,0,0,0,0,0,0,0,_S,_C,_O,_R,_E,_CL,$FF
+LEVEL_TEXT
+    DB _L,_E,_V,_E,_L,_CL,0,0,0,0,0,0,0,0,0,0,0,_S,_C,_O,_R,_E,_CL,$FF
 START_GAME_TITLE
     DB 	139,0,_Z,_X,_8,_1,0,_S,_P,_A,_C,_E,0,_S,_H,_O,_O,_T,_E,_R,0,139,$ff
 START_GAME_CRED1
