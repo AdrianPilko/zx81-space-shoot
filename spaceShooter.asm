@@ -41,7 +41,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      4
+VSYNCLOOP       EQU      6
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -287,23 +287,6 @@ preinit
     xor a
     ld (enemyAddedFlag),a
 
-    ld de, 661
-    ld hl, Display+1
-    add hl, de
-    ld a, _INV_A
-    ld (hl),a
-    ld (playerAbsAddress),hl
-
-    ; initially the exit is set to a locked state, player has to get at least 10 dollars to
-    ; unlock the door (ie change it to a grey block
-    ld de, _DOOR_OFFSET   ; exit location
-    ld hl, Display+1
-    add hl, de
-    ld a, _DOOR_LOCKED_CHARACTER
-    ld (hl),a
-    xor a
-    ld (currentDollarCount), a
-
 
     ld de, 372
     ld hl, Display+1
@@ -329,9 +312,21 @@ waitForTVSync
     djnz waitForTVSync
 
     ;debug
-    ld bc, (playerSpritePointer)
-    ld de, 8
+    ld bc, (pointerToMovement)
+    ld de, 6
     call print_number16bits
+
+    ;debug
+    ld bc, playerDirectionAddSubs
+    ld de, 12
+    call print_number16bits
+
+
+    ;debug
+    ld bc, playerDirectionAddSubs_end
+    ld de, 18
+    call print_number16bits
+
 
     ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
@@ -365,6 +360,10 @@ rotateLeft
     ld (playerSpritePointer), hl
     ;; need to set the current direction - this also moves through a sequence based on
     ;; how many "compass point directions" there are (8)
+    ld hl, (pointerToMovement)
+    inc hl
+    inc hl
+    ld (pointerToMovement), hl
     jp gameLoop
 
 moveRight
@@ -385,6 +384,13 @@ rotateRight
     or a   ; clear the casrry flag otherwise will subtract one more than expected (sometimes)
     sbc hl, de
     ld (playerSpritePointer), hl
+    ;; need to set the current direction - this also moves through a sequence based on
+    ;; how many "compass point directions" there are (8)
+    ld hl, (pointerToMovement)
+    dec hl
+    dec hl
+    ld (pointerToMovement), hl
+
     jp gameLoop
 
 moveUp
@@ -393,14 +399,38 @@ moveUp
 moveDown
     pop hl
     jp gameLoop
-firePressed
+
+firePressed ; this like the other key press are just jumped to not called
     pop hl
+    ld a, (playerMoving)  ; toggle player moving
+    cp 1
+    jp z, stopMoveOnFire
     ld a, 1
+    ld (playerMoving),a
+    jp gameLoop
+stopMoveOnFire
+    xor a
     ld (playerMoving), a
     jp gameLoop
 
 movePlayer
+    ld a, (playerMoving)
+    cp 1
+    jp z, do_movePlayer
+    ret
+do_movePlayer
+    ; go via a to dereference pointer to movement
+    ld hl, (pointerToMovement)
+    ld e, (hl)                   ; load the low byte of the address into register e
+    inc hl                       ; increment hl to point to the high byte of the address
+    ld d, (hl)                   ; load the high byte of the address into register d
 
+    ;; so now de has the value to add for movements
+    ld hl, (currentPlayerLocation)
+    add hl, de
+    ld (currentPlayerLocation), hl
+    ;xor a
+    ;ld (playerMoving),a
     ret
 
 gameWon
@@ -553,16 +583,20 @@ printLivesAndScore
 
 wrapPointerEnd
     push hl
-    ld hl, eigthPlayerSprite
-    ld (playerSpritePointer),hl
+      ld hl, eigthPlayerSprite
+      ld (playerSpritePointer),hl
+      ld hl, playerDirectionAddSubs_end
+      ld (pointerToMovement), hl
     pop hl
     ret
 
 
 wrapPointerStart
     push hl
-    ld hl, defaultPlayerSprite
-    ld (playerSpritePointer), hl
+      ld hl, defaultPlayerSprite
+      ld (playerSpritePointer), hl
+      ld hl, playerDirectionAddSubs
+      ld (pointerToMovement), hl
     pop hl
     ret
 
@@ -650,6 +684,8 @@ playerMoving
     DEFB 0
 pointerToMovement
     DEFW  0
+tempPointerToMovement
+    DEFW 0
 ; this controls the movements of the player based on how many blocks have to be added or subtracted to move
 ; in the 8 directions
 playerDirectionAddSubs
@@ -660,8 +696,10 @@ playerDirectionAddSubs
     DEFW +33  ; south
     DEFW +34  ; south-east
     DEFW +1   ; east
+playerDirectionAddSubs_end
     DEFW -32  ; north-east
-    DEFB 0 ; extra byte for alignment
+
+
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
 defaultPlayerSprite
