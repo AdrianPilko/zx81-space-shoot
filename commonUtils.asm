@@ -260,7 +260,7 @@ readKeys:
 
     ld a, KEYBOARD_READ_PORT_SPACE_TO_B
     in a, (KEYBOARD_READ_PORT)					; read from io port
-    bit 0, a                            ; A
+    bit 0, a                            ; SPACE KEY
     jp z, firePressed
 
 
