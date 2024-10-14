@@ -339,7 +339,7 @@ gameLoopKeyRet   ; this gets jumped to if no keys pressed
     jp gameLoop
 
 
-moveLeft
+leftPressed
     pop hl
     ld hl,(playerSpritePointer)
     ld de,eigthPlayerSprite
@@ -364,7 +364,7 @@ rotateLeft
     ld (pointerToMovement), hl
     jp gameLoop
 
-moveRight
+rightPressed
     pop hl
     ld hl,(playerSpritePointer)
     ld de,defaultPlayerSprite
@@ -391,14 +391,18 @@ rotateRight
 
     jp gameLoop
 
-moveUp
+upPressed
     pop hl
     jp gameLoop
-moveDown
+downPressed
     pop hl
+    jp gameLoop
+firePressed
+    pop hl
+
     jp gameLoop
 
-firePressed ; this like the other key press are just jumped to not called
+spacePressed ; this like the other key press are just jumped to not called
     pop hl
     ld a, (playerMoving)  ; toggle player moving
     cp 1
@@ -417,6 +421,18 @@ movePlayer
     jp z, do_movePlayer
     ret
 do_movePlayer
+    ; check if on edge
+    ld a, playerX
+    cp 0
+    jp z, returnFromMovePlayer
+    cp 31
+    jp z, returnFromMovePlayer
+    ld a, playerY
+    cp 0
+    jp z, returnFromMovePlayer
+    ld a, playerY
+    cp 16
+    jp z, returnFromMovePlayer
     ; go via a to dereference pointer to movement
     ld hl, (pointerToMovement)
     ld e, (hl)                   ; load the low byte of the address into register e
@@ -429,6 +445,7 @@ do_movePlayer
     ld (currentPlayerLocation), hl
     ;xor a
     ;ld (playerMoving),a
+returnFromMovePlayer
     ret
 
 gameWon
@@ -677,7 +694,10 @@ playerSpritePointer
 
 currentPlayerLocation
     DEFW 0
-
+playerX
+    DEFB 10
+playerY
+    DEFB 10
 playerMoving
     DEFB 0
 pointerToMovement

@@ -241,26 +241,31 @@ readKeys:
     ld a, KEYBOARD_READ_PORT_P_TO_Y
     in a, (KEYBOARD_READ_PORT)					; read from io port
     bit 1, a                            ; O
-    jp z, moveLeft
+    jp z, leftPressed
 
     ld a, KEYBOARD_READ_PORT_P_TO_Y
     in a, (KEYBOARD_READ_PORT)					; read from io port
     bit 0, a					        ; P
-    jp z, moveRight
+    jp z, rightPressed
 
     ld a, KEYBOARD_READ_PORT_Q_TO_T
     in a, (KEYBOARD_READ_PORT)					; read from io port
     bit 0, a						    ; Q
-    jp z, moveUp
+    jp z, upPressed
 
     ld a, KEYBOARD_READ_PORT_A_TO_G
     in a, (KEYBOARD_READ_PORT)					; read from io port
     bit 0, a                            ; A
-    jp z, moveDown
+    jp z, downPressed
 
     ld a, KEYBOARD_READ_PORT_SPACE_TO_B
     in a, (KEYBOARD_READ_PORT)					; read from io port
     bit 0, a                            ; SPACE KEY
+    jp z, spacePressed
+
+    ld a, KEYBOARD_READ_PORT_SHIFT_TO_V
+    in a, (KEYBOARD_READ_PORT)					; read from io port
+    bit 1, a                            ; Z KEY
     jp z, firePressed
 
 
