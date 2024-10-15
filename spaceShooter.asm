@@ -384,12 +384,37 @@ rotateLeft
     inc hl
     ld (pointerToMovement), hl
 
+
+
+    ;;; debug
+    ld hl, (playerX_IncPtr)
+    ld a, (hl)
+    ld de, 34
+    call print_number8bits
+
+    ld hl, (playerY_IncPtr)
+    ld a, (hl)
+    ld de, 37
+    call print_number8bits
+
     ld hl, (playerX_IncPtr)
     inc hl   ; this array is byte sized elements so only one inc
     ld (playerX_IncPtr), hl
     ld hl, (playerY_IncPtr)
     inc hl   ; this array is byte sized elements so only one inc
     ld (playerY_IncPtr), hl
+
+    ;;; debug
+    ld hl, (playerX_IncPtr)
+    ld a, (hl)
+    ld de, 40
+    call print_number8bits
+
+    ld hl, (playerY_IncPtr)
+    ld a, (hl)
+    ld de, 43
+    call print_number8bits
+
 
     jp gameLoop
 
@@ -419,12 +444,34 @@ rotateRight
     ld (pointerToMovement), hl
 
 
+    ;;; debug
     ld hl, (playerX_IncPtr)
-    dec hl   ; this array is byte sized elements so only one dec
+    ld a, (hl)
+    ld de, 34
+    call print_number8bits
+
+    ld hl, (playerY_IncPtr)
+    ld a, (hl)
+    ld de, 37
+    call print_number8bits
+
+    ld hl, (playerX_IncPtr)
+    dec hl   ; this array is byte sized elements so only one inc
     ld (playerX_IncPtr), hl
     ld hl, (playerY_IncPtr)
-    dec hl ; this array is byte sized elements so only one dec
+    dec hl   ; this array is byte sized elements so only one inc
     ld (playerY_IncPtr), hl
+
+    ;;; debug
+    ld hl, (playerX_IncPtr)
+    ld a, (hl)
+    ld de, 40
+    call print_number8bits
+
+    ld hl, (playerY_IncPtr)
+    ld a, (hl)
+    ld de, 43
+    call print_number8bits
 
     jp gameLoop
 
@@ -460,15 +507,15 @@ movePlayer
 do_movePlayer
     ; check if on edge
     ld a, playerX
-    cp 0
+    cp 2
     jp z, returnFromMovePlayer
-    cp 31
-    jp z, returnFromMovePlayer
-    ld a, playerY
-    cp 0
-    jp z, returnFromMovePlayer
-    ld a, playerY
     cp 16
+    jp z, returnFromMovePlayer
+    ld a, playerY
+    cp 2
+    jp z, returnFromMovePlayer
+    ld a, playerY
+    cp 13
     jp z, returnFromMovePlayer
     ; go via a to dereference pointer to movement
     ld hl, (pointerToMovement)
@@ -485,33 +532,41 @@ do_movePlayer
     ; go via a to dereference pointer to player x
     ld hl, (playerX_IncPtr)
     ld a, (hl)
+
+    push af
+    ld de, 34
+    call print_number8bits
+    pop af
+
     push af
     pop bc
-    ;; so now b has the value to add for player x
-    ld a, (playerX)
     or a
+    ld a, (playerX)
     add a,b
     ld (playerX), a
 
     ; go via a to dereference pointer to player y
     ld hl, (playerY_IncPtr)
     ld a, (hl)
+
+    ;push af
+    ;ld de, 36
+    ;call print_number8bits
+    ;pop af
+
     push af
     pop bc
-    ;; so now b has the value to add for player y
-    ld a, (playerY)
     or a
+    ld a, (playerY)
     add a,b
     ld (playerY), a
 
-    ld de, 34
-    ld a, (playerX)
-    call print_number8bits
-
-
-    ld de, 36
-    ld a, (playerY)
-    call print_number8bits
+    ;ld de, 34
+    ;ld a, (playerX)
+    ;call print_number8bits
+    ;ld de, 36
+    ;ld a, (playerY)
+    ;call print_number8bits
     ;xor a
     ;ld (playerMoving),a
 returnFromMovePlayer
@@ -671,6 +726,12 @@ wrapPointerEnd
       ld (playerSpritePointer),hl
       ld hl, playerDirectionAddSubs_end
       ld (pointerToMovement), hl
+      ld hl, playerMovementXY_X_end
+      ld (playerX_IncPtr), hl
+      ld hl, playerMovementXY_Y_end
+      ld (playerY_IncPtr), hl
+
+
     pop hl
     ret
 
@@ -681,6 +742,11 @@ wrapPointerStart
       ld (playerSpritePointer), hl
       ld hl, playerDirectionAddSubs
       ld (pointerToMovement), hl
+      ld hl, playerMovementXY_X
+      ld (playerX_IncPtr), hl
+      ld hl, playerMovementXY_Y
+      ld (playerY_IncPtr), hl
+
     pop hl
     ret
 
@@ -793,6 +859,10 @@ playerX_IncPtr
 playerY_IncPtr
     DEFW 0
 
+DEBUG1
+    DEFW $CAC0
+    DEFW $CAFE
+
 playerMovementXY_X
     DEFB 0      ; north
     DEFB -1     ; north-west
@@ -801,6 +871,7 @@ playerMovementXY_X
     DEFB 0      ; south
     DEFB +1     ; south-east
     DEFB +1     ; east
+playerMovementXY_X_end
     DEFB +1     ; north-east
 playerMovementXY_Y
     DEFB -1
@@ -810,7 +881,12 @@ playerMovementXY_Y
     DEFB +1
     DEFB +1
     DEFB 0
-    DEFB -1
+playerMovementXY_Y_end
+    DEFW -1
+
+DEBUG2
+    DEFW $BAD0
+    DEFW $BEEF
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
 defaultPlayerSprite
