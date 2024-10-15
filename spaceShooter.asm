@@ -300,6 +300,15 @@ preinit
     ld hl, playerDirectionAddSubs
     ld (pointerToMovement), hl
 
+    ld a, 9
+    ld (playerX), a
+    ld a, 11
+    ld (playerY), a
+    ld hl, playerMovementXY_X
+    ld (playerX_IncPtr), hl
+    ld hl, playerMovementXY_Y
+    ld (playerY_IncPtr), hl
+
 gameLoop
 
     ld hl, (playerAbsAddress)
@@ -331,6 +340,18 @@ waitForTVSync
     ld c, 8
     ld b, 8
     call drawSprite
+; debug
+    ld a, (playerY)
+    ld b, a
+    ld a, (playerX)
+    ld c, a
+    call PRINTAT
+    ld a, 128
+    call PRINT
+
+    ld hl, (currentPlayerLocation)
+    ld a, 8
+    ld (hl), a
 
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
@@ -362,6 +383,14 @@ rotateLeft
     inc hl
     inc hl
     ld (pointerToMovement), hl
+
+    ld hl, (playerX_IncPtr)
+    inc hl   ; this array is byte sized elements so only one inc
+    ld (playerX_IncPtr), hl
+    ld hl, (playerY_IncPtr)
+    inc hl   ; this array is byte sized elements so only one inc
+    ld (playerY_IncPtr), hl
+
     jp gameLoop
 
 rightPressed
@@ -388,6 +417,14 @@ rotateRight
     dec hl
     dec hl
     ld (pointerToMovement), hl
+
+
+    ld hl, (playerX_IncPtr)
+    dec hl   ; this array is byte sized elements so only one dec
+    ld (playerX_IncPtr), hl
+    ld hl, (playerY_IncPtr)
+    dec hl ; this array is byte sized elements so only one dec
+    ld (playerY_IncPtr), hl
 
     jp gameLoop
 
@@ -443,6 +480,38 @@ do_movePlayer
     ld hl, (currentPlayerLocation)
     add hl, de
     ld (currentPlayerLocation), hl
+
+
+    ; go via a to dereference pointer to player x
+    ld hl, (playerX_IncPtr)
+    ld a, (hl)
+    push af
+    pop bc
+    ;; so now b has the value to add for player x
+    ld a, (playerX)
+    or a
+    add a,b
+    ld (playerX), a
+
+    ; go via a to dereference pointer to player y
+    ld hl, (playerY_IncPtr)
+    ld a, (hl)
+    push af
+    pop bc
+    ;; so now b has the value to add for player y
+    ld a, (playerY)
+    or a
+    add a,b
+    ld (playerY), a
+
+    ld de, 34
+    ld a, (playerX)
+    call print_number8bits
+
+
+    ld de, 36
+    ld a, (playerY)
+    call print_number8bits
     ;xor a
     ;ld (playerMoving),a
 returnFromMovePlayer
@@ -717,7 +786,31 @@ playerDirectionAddSubs
 playerDirectionAddSubs_end
     DEFW -32  ; north-east
 
+; this controls how much is added to X or Y for the player directions
+; they are bytes because the playerX playerY are byte also
+playerX_IncPtr
+    DEFW 0
+playerY_IncPtr
+    DEFW 0
 
+playerMovementXY_X
+    DEFB 0      ; north
+    DEFB -1     ; north-west
+    DEFB -1     ; west
+    DEFB -1     ; south-weat
+    DEFB 0      ; south
+    DEFB +1     ; south-east
+    DEFB +1     ; east
+    DEFB +1     ; north-east
+playerMovementXY_Y
+    DEFB -1
+    DEFB -1
+    DEFB 0
+    DEFB +1
+    DEFB +1
+    DEFB +1
+    DEFB 0
+    DEFB -1
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
 defaultPlayerSprite
