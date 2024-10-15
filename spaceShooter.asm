@@ -388,33 +388,27 @@ rotateLeft
 
     ;;; debug
     ld hl, (playerX_IncPtr)
-    ld a, (hl)
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
     ld de, 34
-    call print_number8bits
+    call print_number16bits
 
     ld hl, (playerY_IncPtr)
-    ld a, (hl)
-    ld de, 37
-    call print_number8bits
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    ld de, 40
+    call print_number16bits
 
     ld hl, (playerX_IncPtr)
     inc hl   ; this array is byte sized elements so only one inc
+    inc hl
     ld (playerX_IncPtr), hl
     ld hl, (playerY_IncPtr)
     inc hl   ; this array is byte sized elements so only one inc
+    inc hl
     ld (playerY_IncPtr), hl
-
-    ;;; debug
-    ld hl, (playerX_IncPtr)
-    ld a, (hl)
-    ld de, 40
-    call print_number8bits
-
-    ld hl, (playerY_IncPtr)
-    ld a, (hl)
-    ld de, 43
-    call print_number8bits
-
 
     jp gameLoop
 
@@ -443,17 +437,20 @@ rotateRight
     dec hl
     ld (pointerToMovement), hl
 
-
     ;;; debug
     ld hl, (playerX_IncPtr)
-    ld a, (hl)
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
     ld de, 34
-    call print_number8bits
+    call print_number16bits
 
     ld hl, (playerY_IncPtr)
-    ld a, (hl)
-    ld de, 37
-    call print_number8bits
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    ld de, 40
+    call print_number16bits
 
     ld hl, (playerX_IncPtr)
     dec hl   ; this array is byte sized elements so only one inc
@@ -461,17 +458,6 @@ rotateRight
     ld hl, (playerY_IncPtr)
     dec hl   ; this array is byte sized elements so only one inc
     ld (playerY_IncPtr), hl
-
-    ;;; debug
-    ld hl, (playerX_IncPtr)
-    ld a, (hl)
-    ld de, 40
-    call print_number8bits
-
-    ld hl, (playerY_IncPtr)
-    ld a, (hl)
-    ld de, 43
-    call print_number8bits
 
     jp gameLoop
 
@@ -534,11 +520,6 @@ do_movePlayer
     ld a, (hl)
 
     push af
-    ld de, 34
-    call print_number8bits
-    pop af
-
-    push af
     pop bc
     or a
     ld a, (playerX)
@@ -548,11 +529,6 @@ do_movePlayer
     ; go via a to dereference pointer to player y
     ld hl, (playerY_IncPtr)
     ld a, (hl)
-
-    ;push af
-    ;ld de, 36
-    ;call print_number8bits
-    ;pop af
 
     push af
     pop bc
@@ -864,23 +840,23 @@ DEBUG1
     DEFW $CAFE
 
 playerMovementXY_X
-    DEFB 0      ; north
-    DEFB -1     ; north-west
-    DEFB -1     ; west
-    DEFB -1     ; south-weat
-    DEFB 0      ; south
-    DEFB +1     ; south-east
-    DEFB +1     ; east
+    DEFW  0      ; north
+    DEFW -1     ; north-west
+    DEFW -1     ; west
+    DEFW -1     ; south-weat
+    DEFW 0      ; south
+    DEFW +1     ; south-east
+    DEFW +1     ; east
 playerMovementXY_X_end
-    DEFB +1     ; north-east
+    DEFW +1     ; north-east
 playerMovementXY_Y
-    DEFB -1
-    DEFB -1
-    DEFB 0
-    DEFB +1
-    DEFB +1
-    DEFB +1
-    DEFB 0
+    DEFW -1
+    DEFW -1
+    DEFW 0
+    DEFW +1
+    DEFW +1
+    DEFW +1
+    DEFW 0
 playerMovementXY_Y_end
     DEFW -1
 
