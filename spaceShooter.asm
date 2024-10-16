@@ -320,19 +320,21 @@ waitForTVSync
     call vsync
     djnz waitForTVSync
 
-    ;debug
-    ;ld bc, (pointerToMovement)
-    ;ld de, 6
-    ;call print_number16bits
 
-    ;debug
-    ;ld bc, playerDirectionAddSubs
-    ;ld de, 12
-    ;call print_number16bits
-    ;debug
-    ;ld bc, playerDirectionAddSubs_end
-    ;ld de, 18
-    ;call print_number16bits
+    ;;; debug
+    ld hl, (playerX_IncPtr)
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    ld de, 34
+    call print_number16bits
+
+    ld hl, (playerY_IncPtr)
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    ld de, 40
+    call print_number16bits
 
 
     ld hl, (playerSpritePointer)
@@ -340,19 +342,6 @@ waitForTVSync
     ld c, 8
     ld b, 8
     call drawSprite
-; debug
-    ld a, (playerY)
-    ld b, a
-    ld a, (playerX)
-    ld c, a
-    call PRINTAT
-    ld a, 128
-    call PRINT
-
-    ld hl, (currentPlayerLocation)
-    ld a, 8
-    ld (hl), a
-
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
     pop hl  ; stack jiggery pokery to make stack consistent without using return
@@ -384,27 +373,11 @@ rotateLeft
     inc hl
     ld (pointerToMovement), hl
 
-
-
-    ;;; debug
-    ld hl, (playerX_IncPtr)
-    ld b, (hl)
-    inc hl
-    ld c, (hl)
-    ld de, 34
-    call print_number16bits
-
-    ld hl, (playerY_IncPtr)
-    ld b, (hl)
-    inc hl
-    ld c, (hl)
-    ld de, 40
-    call print_number16bits
-
     ld hl, (playerX_IncPtr)
     inc hl   ; this array is byte sized elements so only one inc
     inc hl
     ld (playerX_IncPtr), hl
+
     ld hl, (playerY_IncPtr)
     inc hl   ; this array is byte sized elements so only one inc
     inc hl
@@ -437,26 +410,13 @@ rotateRight
     dec hl
     ld (pointerToMovement), hl
 
-    ;;; debug
-    ld hl, (playerX_IncPtr)
-    ld b, (hl)
-    inc hl
-    ld c, (hl)
-    ld de, 34
-    call print_number16bits
-
-    ld hl, (playerY_IncPtr)
-    ld b, (hl)
-    inc hl
-    ld c, (hl)
-    ld de, 40
-    call print_number16bits
-
     ld hl, (playerX_IncPtr)
     dec hl   ; this array is byte sized elements so only one inc
+    dec hl
     ld (playerX_IncPtr), hl
     ld hl, (playerY_IncPtr)
     dec hl   ; this array is byte sized elements so only one inc
+    dec hl
     ld (playerY_IncPtr), hl
 
     jp gameLoop
@@ -491,19 +451,16 @@ movePlayer
     jp z, do_movePlayer
     ret
 do_movePlayer
-    ; check if on edge
-    ld a, playerX
-    cp 2
-    jp z, returnFromMovePlayer
-    cp 16
-    jp z, returnFromMovePlayer
-    ld a, playerY
-    cp 2
-    jp z, returnFromMovePlayer
-    ld a, playerY
-    cp 13
-    jp z, returnFromMovePlayer
-    ; go via a to dereference pointer to movement
+
+    ld a, (playerX)
+    ld de, 45
+    call print_number8bits
+
+    ld a, (playerY)
+    ld de, 48
+    call print_number8bits
+
+     ; go via a to dereference pointer to movement
     ld hl, (pointerToMovement)
     ld e, (hl)                   ; load the low byte of the address into register e
     inc hl                       ; increment hl to point to the high byte of the address
@@ -537,14 +494,21 @@ do_movePlayer
     add a,b
     ld (playerY), a
 
-    ;ld de, 34
-    ;ld a, (playerX)
-    ;call print_number8bits
-    ;ld de, 36
-    ;ld a, (playerY)
-    ;call print_number8bits
-    ;xor a
-    ;ld (playerMoving),a
+   ; check if on edge
+    ld a, (playerX)
+    cp 1
+    jp z, stopMovement
+    cp 23
+    jp z, stopMovement
+    ld a, (playerY)
+    cp 2
+    jp z, stopMovement
+    cp 16
+    jp z, stopMovement
+    jp returnFromMovePlayer
+stopMovement
+    xor a
+    ld (playerMoving),a
 returnFromMovePlayer
     ret
 
@@ -839,6 +803,7 @@ DEBUG1
     DEFW $CAC0
     DEFW $CAFE
 
+
 playerMovementXY_X
     DEFW  0      ; north
     DEFW -1     ; north-west
@@ -850,15 +815,16 @@ playerMovementXY_X
 playerMovementXY_X_end
     DEFW +1     ; north-east
 playerMovementXY_Y
+    DEFW -1     ; north
     DEFW -1
-    DEFW -1
-    DEFW 0
+    DEFW 0      ; west
     DEFW +1
+    DEFW +1     ; south
     DEFW +1
-    DEFW +1
-    DEFW 0
+    DEFW 0      ; east
 playerMovementXY_Y_end
     DEFW -1
+
 
 DEBUG2
     DEFW $BAD0
