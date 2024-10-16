@@ -41,7 +41,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      6
+VSYNCLOOP       EQU      4
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -496,19 +496,57 @@ do_movePlayer
 
    ; check if on edge
     ld a, (playerX)
-    cp 1
-    jp z, stopMovement
-    cp 23
-    jp z, stopMovement
-    ld a, (playerY)
     cp 2
-    jp z, stopMovement
+    jp z, reversePlayerDirection
+    cp 22
+    jp z, reversePlayerDirection
+    ld a, (playerY)
+    cp 3
+    jp z, reversePlayerDirection
     cp 16
-    jp z, stopMovement
+    jp z, reversePlayerDirection
     jp returnFromMovePlayer
-stopMovement
-    xor a
-    ld (playerMoving),a
+reversePlayerDirection
+    ;xor a
+    ;ld (playerMoving),a
+    ld b, 4
+reversePlayerLoop
+    push bc
+    ld hl,(playerSpritePointer)
+    ld de,eigthPlayerSprite
+    ld a, e
+    cp l
+    jp nz, incPtrsToReverseMov
+    ld a, d
+    cp h
+    jp nz, incPtrsToReverseMov
+
+    call wrapPointerStart
+    jp endOfReverseMovementLoop
+incPtrsToReverseMov
+    ld hl,(playerSpritePointer)
+    ld de, 64
+    add hl, de
+    ld (playerSpritePointer), hl
+    ;; need to set the current direction - this also moves through a sequence based on
+    ;; how many "compass point directions" there are (8)
+    ld hl, (pointerToMovement)
+    inc hl
+    inc hl
+    ld (pointerToMovement), hl
+
+    ld hl, (playerX_IncPtr)
+    inc hl   ; this array is byte sized elements so only one inc
+    inc hl
+    ld (playerX_IncPtr), hl
+
+    ld hl, (playerY_IncPtr)
+    inc hl   ; this array is byte sized elements so only one inc
+    inc hl
+    ld (playerY_IncPtr), hl
+endOfReverseMovementLoop
+    pop bc
+    djnz reversePlayerLoop
 returnFromMovePlayer
     ret
 
