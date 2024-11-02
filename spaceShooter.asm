@@ -45,6 +45,7 @@ PRINTAT EQU $08f5
 PRINT EQU $10
 
 SCREEN_SCROLL_MEM_OFFSET EQU 693
+SCREEN_SCROLL_MEM_TOP_OFFSET EQU 99
 
 SCREEN_WIDTH EQU 32
 SCREEN_HEIGHT EQU 23   ; we can use the full screen becuase we're not using PRINT or PRINT AT ROM subroutines
@@ -297,6 +298,15 @@ preinit
 	add hl, de
 	ld (var_scroll_screen_bottom_to), hl
 
+
+    ld hl,(D_FILE) ;initialise road start memory address
+	ld de, SCREEN_SCROLL_MEM_TOP_OFFSET
+	add hl, de	
+	ld (var_scroll_screen_top_from), hl
+	ld de, 33
+	add hl, de
+	ld (var_scroll_screen_top_to), hl
+
     ld a, 20
     ld (genRow), a
     ld a, 1
@@ -369,7 +379,7 @@ waitForTVSync
 
 
     call moveBackground
-    
+
     ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
     ld c, 8
@@ -479,12 +489,6 @@ stopMoveOnFire
 
 
 moveBackground
-    ; go via a to dereference pointer to movement
-    ld hl, (pointerToMovement)
-    ld e, (hl)                   ; load the low byte of the address into register e
-    inc hl                       ; increment hl to point to the high byte of the address
-    ld d, (hl)                   ; load the high byte of the address into register d
-
 
     ld a, (toggleLine)
     cp 1
@@ -528,9 +532,23 @@ addLineAtTopNext
     inc hl
     djnz addLineAtTopNext
   
-    ;; todo - check whcih direction to scroll
+    push af
 
-    ;; initially only scroll up
+    ; go via a to dereference pointer to movement
+    ld hl, (playerY_IncPtr)
+    ld e, (hl)                   ; load the low byte of the address into register e
+    inc hl                       ; increment hl to point to the high byte of the address
+    ld d, (hl)                   ; load the high byte of the address into register d
+    ld a, e
+    cp -1
+    jp z, scrollUp
+    cp 1
+    jp z, scrollDown
+    pop af
+    ret
+scrollUp
+    pop af
+
 	;scroll screen up	
 	ld hl,(var_scroll_screen_bottom_from)  ; load left road address	
 	ld de,(var_scroll_screen_bottom_to) ; load right road address		
@@ -540,7 +558,20 @@ addLineAtTopNext
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
+    ret
+scrollDown
 
+    pop af
+	;scroll screen down	
+	ld hl,(var_scroll_screen_top_to)  ; load left road address	
+	ld de,(var_scroll_screen_top_from) ; load right road address		
+	;ld bc,694 ;694 = 32columns * 21 rows - 1
+    ld bc, 660 ;  = 33columns * 20 rows
+	; LDDR repeats the instruction LDI (Does a LD (DE),(HL) and decrements 
+	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
+	; the start of the routine, it will try loop around until BC=0 again.	
+	ldir
+    
     ret
 
 movePlayer
@@ -1055,6 +1086,11 @@ endPlayerSpriteMem
 var_scroll_screen_bottom_from
     DW 0
 var_scroll_screen_bottom_to
+    DW 0
+
+var_scroll_screen_top_from
+    DW 0
+var_scroll_screen_top_to
     DW 0
 YOU_WON_TEXT_0
     DB 7,3,3,3,3,3,3,3,3,3,3,3,3,132,$ff
