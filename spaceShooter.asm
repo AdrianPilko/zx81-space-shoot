@@ -376,10 +376,7 @@ waitForTVSync
     ;ld c, (hl)
     ;ld de, 40
     ;call print_number16bits
-
-
     call moveBackground
-
     ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
     ld c, 8
