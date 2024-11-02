@@ -525,28 +525,20 @@ doTheMoveUp:
     ld hl, Display+1;
     ld de, 66
     add hl, de
-    ld b, 16
+    ld b, 32
  
 addLineAtTopUp
     ld (hl),a
     inc hl
-    inc hl
     djnz addLineAtTopUp
     ld a, c
     inc hl
-    inc hl
-    ld b, 15
+    ld b, 32
  
 addLineAtTopNextUp
     ld (hl),a
     inc hl
-    inc hl
     djnz addLineAtTopNextUp
-  
-
-
-
-
   
 	;scroll screen up	
 	ld hl,(var_scroll_screen_bottom_from)  ; load left road address	
@@ -557,12 +549,8 @@ addLineAtTopNextUp
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
-    ret
-
-
+    ret  
 scrollDown
-
-
 
     ld a, (toggleLine)
     cp 1
@@ -584,27 +572,21 @@ doTheMoveDown:
     ld hl, Display+1;
     ld de, 726
     add hl, de
-    ld b, 16
+    ld b, 32
  
 addLineAtBottomDown
     ld (hl),a
     inc hl
-    inc hl
     djnz addLineAtBottomDown
     ld a, c
     inc hl
-    inc hl
-    ld b, 15
+    ld b, 32
  
 addLineAtTopPrevDown
     ld (hl),a
     inc hl
-    inc hl
     djnz addLineAtTopPrevDown
   
-
-
-
   	;scroll screen down	
 	ld hl,(var_scroll_screen_top_to)  ; load left road address	
 	ld de,(var_scroll_screen_top_from) ; load right road address		
