@@ -56,7 +56,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      6
+VSYNCLOOP       EQU      4
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -489,51 +489,6 @@ stopMoveOnFire
 
 
 moveBackground
-
-    ld a, (toggleLine)
-    cp 1
-    jp z, setLineGrey
-
-    ld a, 1
-    ld (toggleLine),a
-    ld a, 128  ; black block
-    ld c, 8
-    jp doTheMove
-setLineGrey:
-    xor a
-    ld (toggleLine),a
-    ld a, 8  ; grey block
-    ld c, 128
-
-doTheMove:
-;;; add a line of non white "stuff"
-    ld hl, Display+1;
-    ld de, 66
-    add hl, de
-    ld b, 16
- 
-addLineAtTop
-    ld (hl),a
-    inc hl
-    inc hl
-    djnz addLineAtTop 
-    ;ld (hl), 128
-    ;ld de, 34
-    ;add hl, de
-    ;ld (hl), 8
-    ld a, c
-    inc hl
-    inc hl
-    ld b, 15
- 
-addLineAtTopNext
-    ld (hl),a
-    inc hl
-    inc hl
-    djnz addLineAtTopNext
-  
-    push af
-
     ; go via a to dereference pointer to movement
     ld hl, (playerY_IncPtr)
     ld e, (hl)                   ; load the low byte of the address into register e
@@ -544,25 +499,113 @@ addLineAtTopNext
     jp z, scrollUp
     cp 1
     jp z, scrollDown
-    pop af
     ret
 scrollUp
-    pop af
 
+
+
+
+    ld a, (toggleLine)
+    cp 1
+    jp z, setLineGreyUp
+
+    ld a, 1
+    ld (toggleLine),a
+    ld a, 128  ; black block
+    ld c, 8
+    jp doTheMoveUp
+setLineGreyUp:
+    xor a
+    ld (toggleLine),a
+    ld a, 8  ; grey block
+    ld c, 128
+
+doTheMoveUp:
+;;; add a line of non white "stuff"
+    ld hl, Display+1;
+    ld de, 66
+    add hl, de
+    ld b, 16
+ 
+addLineAtTopUp
+    ld (hl),a
+    inc hl
+    inc hl
+    djnz addLineAtTopUp
+    ld a, c
+    inc hl
+    inc hl
+    ld b, 15
+ 
+addLineAtTopNextUp
+    ld (hl),a
+    inc hl
+    inc hl
+    djnz addLineAtTopNextUp
+  
+
+
+
+
+  
 	;scroll screen up	
 	ld hl,(var_scroll_screen_bottom_from)  ; load left road address	
 	ld de,(var_scroll_screen_bottom_to) ; load right road address		
 	;ld bc,694 ;694 = 32columns * 21 rows - 1
     ld bc, 660 ;  = 33columns * 20 rows
-	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and decrements 
+	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and increments 
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
     ret
+
+
 scrollDown
 
-    pop af
-	;scroll screen down	
+
+
+    ld a, (toggleLine)
+    cp 1
+    jp z, setLineGreyDown
+
+    ld a, 1
+    ld (toggleLine),a
+    ld a, 128  ; black block
+    ld c, 8
+    jp doTheMoveDown
+setLineGreyDown:
+    xor a
+    ld (toggleLine),a
+    ld a, 8  ; grey block
+    ld c, 128
+
+doTheMoveDown:
+;;; add a line of non white "stuff"
+    ld hl, Display+1;
+    ld de, 726
+    add hl, de
+    ld b, 16
+ 
+addLineAtBottomDown
+    ld (hl),a
+    inc hl
+    inc hl
+    djnz addLineAtBottomDown
+    ld a, c
+    inc hl
+    inc hl
+    ld b, 15
+ 
+addLineAtTopPrevDown
+    ld (hl),a
+    inc hl
+    inc hl
+    djnz addLineAtTopPrevDown
+  
+
+
+
+  	;scroll screen down	
 	ld hl,(var_scroll_screen_top_to)  ; load left road address	
 	ld de,(var_scroll_screen_top_from) ; load right road address		
 	;ld bc,694 ;694 = 32columns * 21 rows - 1
