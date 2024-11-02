@@ -24,6 +24,19 @@
 
 ;;; Known bug(s)
 
+
+;;; todo list
+;;; 1a) Decided to make the background move and keep the player space ship in middle
+;;;    This should give the illusion of moving around a "landscape" at same time as
+;;;    being easier to handle as no case where player might touch the edge of screen
+;;; 1b) make the map come from a preconfigured memory area (sparsely populated (hopefully))
+;;; 2) make the player shoot work
+;;; 3) add enemies - probably have asteroids that start out small and start getting bigger 
+;;; 4) add collision detection - player dies when hit by asteroid
+;;; 5) add levels - start out with one asteroid increase each level and make them move faster
+;;; 6) allow collection of tokens to collect on the "map"
+;;; 7) add scoring and high score
+
 ;pasmo only accepts DEFINE
 
 
@@ -31,6 +44,7 @@ CLS EQU $0A2A
 PRINTAT EQU $08f5
 PRINT EQU $10
 
+SCREEN_SCROLL_MEM_OFFSET EQU 693
 
 SCREEN_WIDTH EQU 32
 SCREEN_HEIGHT EQU 23   ; we can use the full screen becuase we're not using PRINT or PRINT AT ROM subroutines
@@ -41,7 +55,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      4
+VSYNCLOOP       EQU      6
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -274,6 +288,15 @@ read_start_key
     jr preinit  ; not really necessary
 
 preinit
+
+    ld hl,(D_FILE) ;initialise road start memory address
+	ld de, SCREEN_SCROLL_MEM_OFFSET
+	add hl, de	
+	ld (var_scroll_screen_bottom_from), hl
+	ld de, 33
+	add hl, de
+	ld (var_scroll_screen_bottom_to), hl
+
     ld a, 20
     ld (genRow), a
     ld a, 1
@@ -288,7 +311,7 @@ preinit
     ld (enemyAddedFlag),a
 
 
-    ld de, 372
+    ld de, 310
     ld hl, Display+1
     add hl, de
     ld (currentPlayerLocation), hl
@@ -300,14 +323,22 @@ preinit
     ld hl, playerDirectionAddSubs
     ld (pointerToMovement), hl
 
-    ld a, 9
+    ld a, 13
     ld (playerX), a
-    ld a, 11
+    ld a, 9
     ld (playerY), a
     ld hl, playerMovementXY_X
     ld (playerX_IncPtr), hl
     ld hl, playerMovementXY_Y
     ld (playerY_IncPtr), hl
+
+    ld hl, Display+1;
+    ld de, 67
+    add hl, de
+    ld (hl), 0
+    ld de, 33
+    add hl, de
+    ld (hl), 8
 
 gameLoop
 
@@ -322,21 +353,23 @@ waitForTVSync
 
 
     ;;; debug
-    ld hl, (playerX_IncPtr)
-    ld b, (hl)
-    inc hl
-    ld c, (hl)
-    ld de, 34
-    call print_number16bits
+    ;ld hl, (playerX_IncPtr)
+    ;ld b, (hl)
+    ;inc hl
+    ;ld c, (hl)
+    ;ld de, 34
+    ;call print_number16bits
 
-    ld hl, (playerY_IncPtr)
-    ld b, (hl)
-    inc hl
-    ld c, (hl)
-    ld de, 40
-    call print_number16bits
+    ;ld hl, (playerY_IncPtr)
+    ;ld b, (hl)
+    ;inc hl
+    ;ld c, (hl)
+    ;ld de, 40
+    ;call print_number16bits
 
 
+    call moveBackground
+    
     ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
     ld c, 8
@@ -345,7 +378,6 @@ waitForTVSync
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
     pop hl  ; stack jiggery pokery to make stack consistent without using return
-    call movePlayer
     jp gameLoop
 
 
@@ -445,6 +477,72 @@ stopMoveOnFire
     ld (playerMoving), a
     jp gameLoop
 
+
+moveBackground
+    ; go via a to dereference pointer to movement
+    ld hl, (pointerToMovement)
+    ld e, (hl)                   ; load the low byte of the address into register e
+    inc hl                       ; increment hl to point to the high byte of the address
+    ld d, (hl)                   ; load the high byte of the address into register d
+
+
+    ld a, (toggleLine)
+    cp 1
+    jp z, setLineGrey
+
+    ld a, 1
+    ld (toggleLine),a
+    ld a, 128  ; black block
+    ld c, 8
+    jp doTheMove
+setLineGrey:
+    xor a
+    ld (toggleLine),a
+    ld a, 8  ; grey block
+    ld c, 128
+
+doTheMove:
+;;; add a line of non white "stuff"
+    ld hl, Display+1;
+    ld de, 66
+    add hl, de
+    ld b, 16
+ 
+addLineAtTop
+    ld (hl),a
+    inc hl
+    inc hl
+    djnz addLineAtTop 
+    ;ld (hl), 128
+    ;ld de, 34
+    ;add hl, de
+    ;ld (hl), 8
+    ld a, c
+    inc hl
+    inc hl
+    ld b, 15
+ 
+addLineAtTopNext
+    ld (hl),a
+    inc hl
+    inc hl
+    djnz addLineAtTopNext
+  
+    ;; todo - check whcih direction to scroll
+
+    ;; initially only scroll up
+	;scroll screen up	
+	ld hl,(var_scroll_screen_bottom_from)  ; load left road address	
+	ld de,(var_scroll_screen_bottom_to) ; load right road address		
+	;ld bc,694 ;694 = 32columns * 21 rows - 1
+    ld bc, 660 ;  = 33columns * 20 rows
+	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and decrements 
+	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
+	; the start of the routine, it will try loop around until BC=0 again.	
+	lddr
+
+    ret
+
 movePlayer
     ld a, (playerMoving)
     cp 1
@@ -452,13 +550,13 @@ movePlayer
     ret
 do_movePlayer
 
-    ld a, (playerX)
-    ld de, 45
-    call print_number8bits
+    ;ld a, (playerX)
+    ;ld de, 45
+    ;call print_number8bits
 
-    ld a, (playerY)
-    ld de, 48
-    call print_number8bits
+    ;ld a, (playerY)
+    ;ld de, 48
+    ;call print_number8bits
 
      ; go via a to dereference pointer to movement
     ld hl, (pointerToMovement)
@@ -547,6 +645,8 @@ incPtrsToReverseMov
 endOfReverseMovementLoop
     pop bc
     djnz reversePlayerLoop
+    xor a
+    ld (playerMoving), a
 returnFromMovePlayer
     ret
 
@@ -766,7 +866,9 @@ Display        	DB $76
                 DB  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,$76
                 DB  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,$76
                 DB  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,$76
-                DB  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,$76
+                DB  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                DB $76
+DisplayEnd
 
 Variables
 score_mem_tens
@@ -867,6 +969,13 @@ playerMovementXY_Y_end
 DEBUG2
     DEFW $BAD0
     DEFW $BEEF
+
+toggleLine
+  DEFB 0
+
+
+
+
 ;;; this is 8 x 8 (16 by 16 "pixels" times 8 sprites, one for each of the compass points and in between
 ;; this amounts to 512 bytes of RAM (wow!!!)
 defaultPlayerSprite
@@ -943,7 +1052,10 @@ eigthPlayerSprite
   DEFB $00, $00, $00, $00, $00, $00, $00, $00
 endPlayerSpriteMem
 
-
+var_scroll_screen_bottom_from
+    DW 0
+var_scroll_screen_bottom_to
+    DW 0
 YOU_WON_TEXT_0
     DB 7,3,3,3,3,3,3,3,3,3,3,3,3,132,$ff
 YOU_LOST_TEXT_1
