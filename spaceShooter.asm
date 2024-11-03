@@ -56,7 +56,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      4
+VSYNCLOOP       EQU      6
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -599,6 +599,10 @@ addLineAtTopPrevDown
 	; the start of the routine, it will try loop around until BC=0 again.	
 	ldir   
     ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;; scroll screen left and add alternating lines at eeach edge
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 scrollLeft
     ld a, (toggleLine)
     cp 1
@@ -657,8 +661,51 @@ screenScrollLeftRowLoop
     pop bc
     djnz screenScrollLeftRowLoop
     ret
- scrollRight
-    ld b, 20
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;; scroll screen right and add alternating lines at each edge
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+scrollRight
+    ld a, (toggleLine)
+    cp 1
+    jp z, setLineGreyRight
+
+    ld a, 1
+    ld (toggleLine),a
+    ld a, 128  ; black block
+    ld c, 8
+    jp doTheMoveRight
+setLineGreyRight:
+    xor a
+    ld (toggleLine),a
+    ld a, 8  ; grey block
+    ld c, 128
+doTheMoveRight
+ ;;; add a column of non white "stuff" on left
+ ;; eventually this should come from a map data area in memory
+    ld hl, Display+1
+    ld de, 33
+    add hl, de
+    ld b, 23
+    ld de, 33
+addLineLeft
+    ld (hl),a
+    add hl, de
+    djnz addLineLeft
+    ld a, c
+    inc hl
+    ld b, 23
+    ld de, 33 
+addLineAtLeftNext
+    ld (hl),a
+    add hl, de
+    djnz addLineAtLeftNext
+
+
+
+    ld b, 23
     ld hl,(D_FILE)          
     inc hl
     ld de, 64
@@ -1217,7 +1264,7 @@ START_GAME_CRED1
 START_GAME_CRED2
     DB 1,2,1,2,1,0,_B,_Y,0,_A,0,_P,_I,_L,_K,_I,_N,_G,_T,_O,_N,0,_2,_0,_2,_4,0,1,2,1,2,1,$ff
 START_GAME_CRED3
-    DB 1, 2, 1, 2 ,1,0,_V,_E,_R,_S,_I,_O,_N,0,_V,_0,_DT,_1,0,1,2,1,2,1,$ff
+    DB 1, 2, 1, 2 ,1,0,_V,_E,_R,_S,_I,_O,_N,0,_V,_0,_DT,_2,0,1,2,1,2,1,$ff
 START_TEXT2
     DB 0,0,0,_D, _E, _F, _E, _A, _T,0, _T, _H, _E, 0, _A, _L, _I, _E, _N, _S, $ff
 START_TEXT_TIP_1
