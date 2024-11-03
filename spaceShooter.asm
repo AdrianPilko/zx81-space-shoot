@@ -352,6 +352,7 @@ preinit
 
 gameLoop
 
+    call moveBackground
     ld hl, (playerAbsAddress)
     ld a, _INV_A
     ld (hl),a
@@ -360,7 +361,6 @@ gameLoop
 waitForTVSync
     call vsync
     djnz waitForTVSync
-
 
     ;;; debug
     ;ld hl, (playerX_IncPtr)
@@ -376,7 +376,7 @@ waitForTVSync
     ;ld c, (hl)
     ;ld de, 40
     ;call print_number16bits
-    call moveBackground
+    
     ld hl, (playerSpritePointer)
     ld de, (currentPlayerLocation)
     ld c, 8
@@ -496,12 +496,17 @@ moveBackground
     jp z, scrollUp
     cp 1
     jp z, scrollDown
+    ld hl, (playerX_IncPtr)
+    ld e, (hl)                   ; load the low byte of the address into register e
+    inc hl                       ; increment hl to point to the high byte of the address
+    ld d, (hl)                   ; load the high byte of the address into register d
+    ld a, e
+    cp 1
+    jp z, scrollLeft
+    cp -1
+    jp z, scrollRight
     ret
 scrollUp
-
-
-
-
     ld a, (toggleLine)
     cp 1
     jp z, setLineGreyUp
@@ -592,8 +597,61 @@ addLineAtTopPrevDown
 	; LDDR repeats the instruction LDI (Does a LD (DE),(HL) and decrements 
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
-	ldir
+	ldir   
+    ret
+scrollLeft
+   ; ld b, 20
+   ; ld hl,(D_FILE)          
+   ; inc hl
+   ; push hl
+   ; pop de
+
+
+
+    ld b, 20
+    ld hl,(D_FILE)          
+    inc hl
+    ld de, 33
+    add hl, de
+    push hl
+    pop de
+screenScrollLeftRowLoop
+    push bc       
     
+    ;; this is the super fast way to copy  the columns to the left
+    ld bc, 31   
+    inc hl    
+    ldir            ;; this is where the magic happens!!! 
+                    ;; LDIR : Repeats LDI (LD (DE),(HL), then increments DE, HL, and decrements BC) until BC=0.
+    inc hl
+    push hl
+    pop de
+    pop bc
+    djnz screenScrollLeftRowLoop
+    ret
+ scrollRight
+    ld b, 20
+    ld hl,(D_FILE)          
+    inc hl
+    ld de, 64
+    add hl, de
+    push hl
+    pop de
+screenScrollRightRowLoop
+    push bc       
+    push hl
+    ;; this is the super fast way to copy  the columns to the left
+    ld bc, 31   
+    dec hl   
+    lddr            ;; this is where the magic happens!!! 
+                    ;; LDIR : Repeats LDI (LD (DE),(HL), then increments DE, HL, and decrements BC) until BC=0.
+    pop hl
+    ld de, 33
+    add hl, de
+    push hl
+    pop de
+    pop bc
+    djnz screenScrollRightRowLoop 
     ret
 
 movePlayer
