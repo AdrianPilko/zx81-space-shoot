@@ -600,15 +600,43 @@ addLineAtTopPrevDown
 	ldir   
     ret
 scrollLeft
-   ; ld b, 20
-   ; ld hl,(D_FILE)          
-   ; inc hl
-   ; push hl
-   ; pop de
+    ld a, (toggleLine)
+    cp 1
+    jp z, setLineGreyLeft
 
+    ld a, 1
+    ld (toggleLine),a
+    ld a, 128  ; black block
+    ld c, 8
+    jp doTheMoveLeft
+setLineGreyLeft:
+    xor a
+    ld (toggleLine),a
+    ld a, 8  ; grey block
+    ld c, 128
+ doTheMoveLeft
+ ;;; add a column of non white "stuff" on left
+ ;; eventually this should come from a map data area in memory
+    ld hl, Display+1
+    ld de, 64
+    add hl, de
+    ld b, 23
+    ld de, 33
+addLineRight
+    ld (hl),a
+    add hl, de
+    djnz addLineRight
+    ld a, c
+    ld de, 63
+    add hl, de
+    ld b, 23
+    ld de, 33 
+addLineAtRightNext
+    ld (hl),a
+    add hl, de
+    djnz addLineAtRightNext
 
-
-    ld b, 20
+    ld b, 23
     ld hl,(D_FILE)          
     inc hl
     ld de, 33
