@@ -56,7 +56,7 @@ PLAYER_LIVES EQU 3
 LEVEL_COUNT_DOWN_INIT EQU 4
 LEV_COUNTDOWN_TO_INVOKE_BOSS EQU 1
 
-VSYNCLOOP       EQU      6
+VSYNCLOOP       EQU      1
 
 ; character set definition/helpers
 __:				EQU	$00	;spacja
@@ -361,23 +361,12 @@ waitForTVSync
     call vsync
     djnz waitForTVSync
 
-
-    ld hl, (playerX_IncPtr)
-    ld e, (hl)                   ; load the low byte of the address into register e
-    inc hl                       ; increment hl to point to the high byte of the address
-    ld d, (hl)                   ; load the high byte of the address into register d
-    
-    ld hl, (currentPlayerLocation)
-    add hl, de
-    push hl
-    pop de
+    call moveBackground
     ld hl, (playerSpritePointer)
-    ;ld de, (currentPlayerLocation)
-    
+    ld de, (currentPlayerLocation)
     ld c, 8
     ld b, 8
     call drawSprite
-    call moveBackground
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
     pop hl  ; stack jiggery pokery to make stack consistent without using return
@@ -1256,11 +1245,11 @@ YOU_WON_TEXT_0
 YOU_LOST_TEXT_1
     DB 5,_Y,_O,_U,__,_L,_O,_S,_E,_CL,_MI,_OP,__,133,$ff
 YOU_WON_TEXT_1
-    DB 5,_Y,_O,_U,__,_E,_S,_C,_A,_P,_E,_D,_QM,133,$ff
+    DB 5,__,__,_Y,_O,_U,__,_W,_O,_N,__,__,133,$ff
 YOU_WON_TEXT_2
     DB 130,131,131,131,131,131,131,131,131,131,131,131,131,129,$ff
 LEVEL_TEXT
-    DB _L,_E,_V,_E,_L,_CL,0,0,0,0,0,0,0,0,0,0,0,_S,_C,_O,_R,_E,_CL,$FF
+    DB _F,_U,_E,_L,_CL,0,0,0,0,0,_A,_I,_R,_CL,0,0,0,0,0,_C,_A,_S,_H,_CL,0,0,0,0,0,$FF
 START_GAME_TITLE
     DB 	139,0,_Z,_X,_8,_1,0,_S,_P,_A,_C,_E,0,_S,_H,_O,_O,_T,_E,_R,0,139,$ff
 START_GAME_CRED1
@@ -1281,6 +1270,39 @@ START_TEXT4
     DB _Q, 0, _U, _P, _CM,0, _A, 0, _D, _O, _W, _N, _CM,0, _O, 0, _L, _E, _F,_T,_CM,0,_P,0,_R,_I,_G,_H,_T,$ff
 high_Score_txt
 	DB 21,21,21,21,_H,_I,_G,_H,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff
+
+PlayerUniversePosition
+    DB 0,0
+UniverseMemory
+;; The start posiiton in the universe will be a random position and stored in PlayerUniversePosition
+;; The universe can have different elements including, each will be a single character (may change later)
+;;     enemy ships - use <
+;;     planets - use O - show a window with options like trade etc
+;;     stars - use asterisk - die if hit
+;;     Fuel - uses an inverted F, 
+;;     black holes - inverted B
+;;     asteroids use inverted $  
+;;     . will be used as the start line offset
+;; player has to collet fuel to keep going and collect "ore" from an asteroid the score increases
+;; we'll make the size of the "universe" as 12K which should allow us plenty of room for program code
+;; example line in universe as in memory, block followed by gap to next, each line has to add up to 32
+;; maximum of 32 including the drawn characters themselves
+;; .,3,*,5,F,10,B,8,0,255,.,32,255,.,7,O,6,*,255,.,
+;; this will give:
+;; 12345678911111111112222222223333   "Column numbers"
+;;          01234567890123456789012
+;;----------------------------------
+;;    *     F          B        O
+;;       
+;;        O      *    
+;;
+;; the draw routing simply has to read from the current location, draw the character then skip the number of
+;; characters and draw the next. The end of line will be 0xff = 255. if the next number is 255 then the 
+;; character is the last on the line.
+;;
+;; This is only an idea at the moment!
+DB _DT,3,_AS,'F'+128,255
+
 VariablesEnd:   DB $80
 BasicEnd:
 
