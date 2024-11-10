@@ -352,7 +352,6 @@ preinit
 
 gameLoop
 
-    call moveBackground
     ld hl, (playerAbsAddress)
     ld a, _INV_A
     ld (hl),a
@@ -362,26 +361,23 @@ waitForTVSync
     call vsync
     djnz waitForTVSync
 
-    ;;; debug
-    ;ld hl, (playerX_IncPtr)
-    ;ld b, (hl)
-    ;inc hl
-    ;ld c, (hl)
-    ;ld de, 34
-    ;call print_number16bits
 
-    ;ld hl, (playerY_IncPtr)
-    ;ld b, (hl)
-    ;inc hl
-    ;ld c, (hl)
-    ;ld de, 40
-    ;call print_number16bits
+    ld hl, (playerX_IncPtr)
+    ld e, (hl)                   ; load the low byte of the address into register e
+    inc hl                       ; increment hl to point to the high byte of the address
+    ld d, (hl)                   ; load the high byte of the address into register d
     
+    ld hl, (currentPlayerLocation)
+    add hl, de
+    push hl
+    pop de
     ld hl, (playerSpritePointer)
-    ld de, (currentPlayerLocation)
+    ;ld de, (currentPlayerLocation)
+    
     ld c, 8
     ld b, 8
     call drawSprite
+    call moveBackground
     call readKeys
 gameLoopKeyRet   ; this gets jumped to if no keys pressed
     pop hl  ; stack jiggery pokery to make stack consistent without using return
@@ -493,32 +489,38 @@ moveBackground
     ld d, (hl)                   ; load the high byte of the address into register d
     ld a, e
     cp -1
-    jp z, scrollUp
+    push af
+    call z, scrollUp
+    pop af
     cp 1
-    jp z, scrollDown
+    call z, scrollDown
+
     ld hl, (playerX_IncPtr)
     ld e, (hl)                   ; load the low byte of the address into register e
     inc hl                       ; increment hl to point to the high byte of the address
     ld d, (hl)                   ; load the high byte of the address into register d
     ld a, e
     cp 1
-    jp z, scrollLeft
+    push af
+    call z, scrollLeft
+    pop af
     cp -1
-    jp z, scrollRight
+    call z, scrollRight
     ret
+
 scrollUp
-    ld a, (toggleLine)
+    ld a, (toggleLineY)
     cp 1
     jp z, setLineGreyUp
 
     ld a, 1
-    ld (toggleLine),a
+    ld (toggleLineY),a
     ld a, 128  ; black block
     ld c, 8
     jp doTheMoveUp
 setLineGreyUp:
     xor a
-    ld (toggleLine),a
+    ld (toggleLineY),a
     ld a, 8  ; grey block
     ld c, 128
 
@@ -551,21 +553,21 @@ addLineAtTopNextUp
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
-    ret  
-scrollDown
+    ret
 
-    ld a, (toggleLine)
+scrollDown
+    ld a, (toggleLineY)
     cp 1
     jp z, setLineGreyDown
 
     ld a, 1
-    ld (toggleLine),a
+    ld (toggleLineY),a
     ld a, 128  ; black block
     ld c, 8
     jp doTheMoveDown
 setLineGreyDown:
     xor a
-    ld (toggleLine),a
+    ld (toggleLineY),a
     ld a, 8  ; grey block
     ld c, 128
 
@@ -604,18 +606,18 @@ addLineAtTopPrevDown
 ;;;;;; scroll screen left and add alternating lines at eeach edge
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 scrollLeft
-    ld a, (toggleLine)
+    ld a, (toggleLineX)
     cp 1
     jp z, setLineGreyLeft
 
     ld a, 1
-    ld (toggleLine),a
+    ld (toggleLineX),a
     ld a, 128  ; black block
     ld c, 8
     jp doTheMoveLeft
 setLineGreyLeft:
     xor a
-    ld (toggleLine),a
+    ld (toggleLineX),a
     ld a, 8  ; grey block
     ld c, 128
  doTheMoveLeft
@@ -668,18 +670,18 @@ screenScrollLeftRowLoop
 ;;;;;; scroll screen right and add alternating lines at each edge
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 scrollRight
-    ld a, (toggleLine)
+    ld a, (toggleLineX)
     cp 1
     jp z, setLineGreyRight
 
     ld a, 1
-    ld (toggleLine),a
+    ld (toggleLineX),a
     ld a, 128  ; black block
     ld c, 8
     jp doTheMoveRight
 setLineGreyRight:
     xor a
-    ld (toggleLine),a
+    ld (toggleLineX),a
     ld a, 8  ; grey block
     ld c, 128
 doTheMoveRight
@@ -1156,9 +1158,11 @@ DEBUG2
     DEFW $BAD0
     DEFW $BEEF
 
-toggleLine
+toggleLineX
   DEFB 0
 
+toggleLineY
+  DEFB 0
 
 
 
